@@ -23,19 +23,19 @@ public abstract class DecoratorEditor : AssetImporterEditor
 	/// </summary>
 	private System.Type editedObjectType;
 	
-	private Editor editorInstance;
+	private AssetImporterEditor editorInstance;
 
 	private static Dictionary<string, MethodInfo> decoratedMethods = new Dictionary<string, MethodInfo>();
 	
 	private static Assembly editorAssembly = Assembly.GetAssembly(typeof(Editor));
 	
-	protected Editor EditorInstance
+	protected AssetImporterEditor EditorInstance
 	{
 		get
 		{
 			if (editorInstance == null && targets != null && targets.Length > 0)
 			{
-				editorInstance = Editor.CreateEditor(targets, decoratedEditorType);
+				editorInstance = (AssetImporterEditor) Editor.CreateEditor(targets, decoratedEditorType);
 			}
 			
 			if (editorInstance == null)
@@ -49,7 +49,7 @@ public abstract class DecoratorEditor : AssetImporterEditor
 	
 	public DecoratorEditor (string editorTypeName)
 	{
-		this.decoratedEditorType = editorAssembly.GetType(editorTypeName);
+		decoratedEditorType = editorAssembly.GetType(editorTypeName);
 		
 		Init ();
 		
@@ -78,14 +78,15 @@ public abstract class DecoratorEditor : AssetImporterEditor
 	{		
 		var flags = BindingFlags.NonPublic	| BindingFlags.Instance;
 		
-		var attributes = this.GetType().GetCustomAttributes(typeof(CustomEditor), true) as CustomEditor[];
+		var attributes = GetType().GetCustomAttributes(typeof(CustomEditor), true) as CustomEditor[];
 		var field = attributes.Select(editor => editor.GetType().GetField("m_InspectedType", flags)).First();
 		
 		editedObjectType = field.GetValue(attributes[0]) as System.Type;
 	}
 
-	void OnDisable()
+	new void OnDisable()
 	{
+		base.OnDisable();
 		if (editorInstance != null)
 		{
 			DestroyImmediate(editorInstance);
@@ -97,7 +98,7 @@ public abstract class DecoratorEditor : AssetImporterEditor
 	/// </summary>
 	protected void CallInspectorMethod(string methodName)
 	{
-		MethodInfo method = null;
+		MethodInfo method;
 		
 		// Add MethodInfo to cache
 		if (!decoratedMethods.ContainsKey(methodName))
@@ -176,6 +177,10 @@ public abstract class DecoratorEditor : AssetImporterEditor
 	{
 		EditorInstance.ReloadPreviewInstances ();
 	}
+
+	protected override bool useAssetDrawPreview => true;
+
+	public override bool showImportedObject => true;
 	
 	public override Texture2D RenderStaticPreview (string assetPath, Object[] subAssets, int width, int height)
 	{

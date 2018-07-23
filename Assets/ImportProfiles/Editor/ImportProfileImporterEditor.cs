@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 
-[CustomEditor(typeof(ModelImporter))]
+//[CustomEditor(typeof(ModelImporter))]
 public class ImportProfileImporterEditor : DecoratorEditor
 {
     private int selected;
@@ -28,11 +28,11 @@ public class ImportProfileImporterEditor : DecoratorEditor
 
     private void OnEnable()
     {
-        assetImportersPaths = ImportProfiles.Editor.ImportProfiles.GetImporters(target.GetType()).Select(x=> x.assetPath).ToList();
-        assetImportersPaths.Add("Custom");
+        assetImportersPaths = ImportProfiles.GetImporters(target.GetType()).Select(x=> x.assetPath).ToList();
 
         if (assetImportersPaths != null)
         {
+            assetImportersPaths.Add("Custom");
             var list = assetImportersPaths.Select(Path.GetFileNameWithoutExtension).ToList();
             names = list.ToArray();
         }
@@ -46,7 +46,7 @@ public class ImportProfileImporterEditor : DecoratorEditor
 
     public override void OnInspectorGUI()
     {
-        if (this.importer.assetPath.Contains("ImportProfiles"))
+        if (importer.assetPath.Contains("ImportProfiles"))
         {
             base.OnInspectorGUI();
             return;
@@ -72,9 +72,10 @@ public class ImportProfileImporterEditor : DecoratorEditor
         if (ApplyButton())
         {
             ReloadPreviewInstances();
+            CallInspectorMethod("ResetTimeStamp");
             ResetValues();
-            serializedObject.Update();
             Repaint();
+            serializedObject.Update();
         }
         GUILayout.EndHorizontal();
     }
