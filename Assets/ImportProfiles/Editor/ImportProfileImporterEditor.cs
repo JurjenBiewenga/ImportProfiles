@@ -28,7 +28,7 @@ public class ImportProfileImporterEditor : DecoratorEditor
 
     private void OnEnable()
     {
-        assetImportersPaths = ImportProfiles.GetImporters(target.GetType()).Select(x=> x.assetPath).ToList();
+        assetImportersPaths = ImportProfiles.GetProfiles(target.GetType()).Select(x=> x.assetPath).ToList();
 
         if (assetImportersPaths != null)
         {

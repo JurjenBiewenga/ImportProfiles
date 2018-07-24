@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Harmony;
 using NUnit.Framework;
 using UnityEditor;
@@ -36,10 +37,12 @@ public static class ImportProfiles
     private static Dictionary<ProfileTypes, List<AssetImporter>> typeProfiles =
         new Dictionary<ProfileTypes, List<AssetImporter>>();
 
+    private static List<ProfileData> profileData = new List<ProfileData>();
+    
     static ImportProfiles()
     {
         new ImporterExtension(Assembly.GetAssembly(typeof(Editor)).GetType("UnityEditor.ModelImporterEditor"));
-        
+
         var assets = AssetDatabase.FindAssets("", new[] {"Assets/ImportProfiles/Editor/Profiles"});
         assets = assets.Distinct().ToArray();
         foreach (var asset in assets)
@@ -49,30 +52,12 @@ public static class ImportProfiles
             if (reverseProfileExtensions.ContainsKey(extension))
             {
                 var type = reverseProfileExtensions[extension];
-                AddProfile(type, AssetImporter.GetAtPath(path));
+                AddProfile(type, AssetImporter.GetAtPath(path), false);
             }
         }
-
-        test();
     }
 
-    private static void test()
-    {
-    }
-
-    public static void Prefix(object __instance)
-    {
-        GUILayout.Label("Test");
-        GUI.enabled = false;
-    }
-
-    public static void Postfix()
-    {
-        GUI.enabled = true;
-        Debug.Log("Post");
-    }
-
-    public static void AddProfile(ProfileTypes type, AssetImporter profile)
+    public static void AddProfile(ProfileTypes type, AssetImporter profile, bool isDefault = false)
     {
         if (!typeProfiles.ContainsKey(type))
             typeProfiles.Add(type, new List<AssetImporter>());
@@ -84,44 +69,32 @@ public static class ImportProfiles
             profiles.Add(importerType, new List<AssetImporter>());
 
         profiles[importerType].Add(profile);
+        profileData.Add(JsonUtility.FromJson<ProfileData>(profile.userData));
     }
 
     public static void CreateProfile(ProfileTypes type, string name)
     {
         var asset = new TextAsset();
-        string path = string.Format("ImportProfiles/Editor/Profiles/{0}/{1}.{2}", type.ToString(),
+        string path = string.Format("Assets/ImportProfiles/Editor/Profiles/{0}/{1}{2}", type.ToString() + 's',
             name, profileExtensions[type]);
+        
+        
         AssetDatabase.CreateAsset(asset, path);
         AssetDatabase.ImportAsset(path);
         AssetDatabase.SaveAssets();
 
         var importer = AssetImporter.GetAtPath(path);
-        AddProfile(type, importer);
+        new ProfileData(path, type, false).Apply();
+        AddProfile(type, importer, false);
     }
 
-    public static List<AssetImporter> GetImporters(Type t)
+    public static IEnumerable<AssetImporter> GetProfiles(Type type)
     {
-        if (profiles.ContainsKey(t))
-        {
-            return profiles[t];
-        }
-
-        return null;
+        return profileData.Where(x=>x.Importer.GetType() == type).Select(x=>x.Importer);
     }
-
-    public static List<AssetImporter> GetImporters(ProfileTypes t)
+    
+    public static IEnumerable<AssetImporter> GetProfiles(ProfileTypes type)
     {
-        if (typeProfiles.ContainsKey(t))
-        {
-            return typeProfiles[t];
-        }
-
-        return null;
+        return profileData.Where(x=>x.Type == type).Select(x=>x.Importer);
     }
-}
-
-public enum ProfileTypes
-{
-    Model,
-    Texture
 }

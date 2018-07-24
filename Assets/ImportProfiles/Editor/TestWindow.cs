@@ -31,17 +31,22 @@ public class TestWindow : EditorWindow
 //        var method = type.GetMethod("InternalSetTargets",
 //            BindingFlags.Default | BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.NonPublic);
 //        editor = (AssetImporterEditor) Activator.CreateInstance(type);
-        editor = (AssetImporterEditor) Editor.CreateEditor(importer);
-        Debug.Log("Type" + type);
-        Debug.Log("Importer" + importer);
+//        editor = (AssetImporterEditor) Editor.CreateEditor(importer);
+//        Debug.Log("Type" + type);
+//        Debug.Log("Importer" + importer);
 //       editor = (AssetImporterEditor)CreateInstance(type);
 //        method.Invoke(editor, BindingFlags.Default | BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.InvokeMethod, null, new [] {new Object[]{data}},  CultureInfo.CurrentCulture);
-        Debug.Log("Editor" + editor);
-        editor.OnEnable();
+//        Debug.Log("Editor" + editor);
+//        editor.OnEnable();
     }
 
     private void OnGUI()
     {
-        editor.OnInspectorGUI();
+//        editor.OnInspectorGUI();
+        if (GUILayout.Button("test"))
+        {
+            ImportProfiles.CreateProfile(ProfileTypes.Model, "Test");
+        }
     }
+    
 }

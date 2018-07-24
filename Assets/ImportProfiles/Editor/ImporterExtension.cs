@@ -44,14 +44,18 @@ public class ImporterExtension
         if (editor == null)
             return;
 
-        string path = AssetDatabase.GetAssetPath(editor.target);
-
-        if (path.Contains("ImportProfiles"))
+        AssetImporter importer = editor.target as AssetImporter;
+        if (importer == null)
+            return;
+        
+        if(importer.assetPath.Contains("ImportProfiles"))
             return;
 
         var assetImportersPaths =
-            ImportProfiles.GetImporters(editor.target.GetType()).Select(x => x.assetPath).ToList();
+            ImportProfiles.GetProfiles(importer.GetType()).Select(x => x.assetPath).ToList();
 
+        GUILayout.Label(importer.userData);
+        
         string[] names = null;
         assetImportersPaths.Add("Custom");
         var list = assetImportersPaths.Select(Path.GetFileNameWithoutExtension).ToList();
@@ -59,14 +63,14 @@ public class ImporterExtension
 
         var userDataProperty = editor.serializedObject.FindProperty("m_UserData");
         GUILayout.BeginHorizontal();
+        var index = assetImportersPaths.IndexOf(userDataProperty.stringValue);
+        if (index == -1)
+            index = 0;
+        
         userDataProperty.stringValue =
             assetImportersPaths[
-                EditorGUILayout.Popup("Selected Profile", assetImportersPaths.IndexOf(userDataProperty.stringValue),
+                EditorGUILayout.Popup("Selected Profile", index,
                     names)];
-//        if (GUILayout.Button("Apply", GUILayout.MaxWidth(80)))
-//        {
-//            typeof(AssetImporterEditor).GetMethod("ApplyAndImport", Flags)?.Invoke(editor, null);
-//        }
 
         GUILayout.EndHorizontal();
 

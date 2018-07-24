@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 09dd27d277f58eb448bbe6d4db848546
+guid: ee3a51aae43a1dc4887242d11ee33583
 ModelImporter:
   serializedVersion: 23
   fileIDToRecycleName:
@@ -11,7 +11,6 @@ ModelImporter:
     2300000: default
     3300000: default
     4300000: default
-    9500000: //RootNode
   externalObjects: {}
   materials:
     importMaterials: 1
@@ -92,6 +91,6 @@ ModelImporter:
   animationType: 0
   humanoidOversampling: 1
   additionalBone: 0
-  userData: Assets/ImportProfiles/Editor/Profiles/Models/test1.obj
+  userData: 
   assetBundleName: 
   assetBundleVariant: 

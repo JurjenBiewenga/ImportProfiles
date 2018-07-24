@@ -145,4 +145,17 @@ public static class SerializedPropertyExtensionMethod
                 throw new ArgumentOutOfRangeException();
         }
     }
+
+    public static bool AddItem(this SerializedProperty property, object item)
+    {
+        if (property.isArray)
+        {
+            property.arraySize++;
+            var arrayElement = property.GetArrayElementAtIndex(property.arraySize -1);
+            arrayElement.SetValue(item);
+            return true;
+        }
+
+        return false;
+    }
 }
