@@ -22,20 +22,22 @@ public class ImporterExtension
     {
         this.types = types;
         var harmony = HarmonyInstance.Create("com.lunosis.importprofiles");
-        var pre = GetType().GetMethod("Prefix", Flags);
-        var post = GetType().GetMethod("Postfix", Flags);
+        var inspectorPre = GetType().GetMethod(nameof(InspectorPrefix), Flags);
+        var applyRevertPre = GetType().GetMethod(nameof(ApplyRevertPrefix), Flags);
         
         foreach (var type in types)
         {
-            var method = type.GetMethod("OnInspectorGUI", Flags);
+            var onInspectorGUI = type.GetMethod("OnInspectorGUI", Flags);
+            var applyRevertGUI = type.GetMethod("ApplyRevertGUI", Flags);
 
-            harmony.Patch(method, new HarmonyMethod(pre), new HarmonyMethod(post));
+            harmony.Patch(onInspectorGUI, new HarmonyMethod(inspectorPre), null);
+            harmony.Patch(applyRevertGUI, new HarmonyMethod(applyRevertPre), null);
         }
 
     }
 
     // ReSharper disable once InconsistentNaming
-    public static void Prefix(object __instance)
+    public static void InspectorPrefix(object __instance)
     {
         AssetImporterEditor editor = __instance as AssetImporterEditor;
 
@@ -61,10 +63,10 @@ public class ImporterExtension
             assetImportersPaths[
                 EditorGUILayout.Popup("Selected Profile", assetImportersPaths.IndexOf(userDataProperty.stringValue),
                     names)];
-        if (GUILayout.Button("Apply", GUILayout.MaxWidth(80)))
-        {
-            typeof(AssetImporterEditor).GetMethod("ApplyAndImport", Flags)?.Invoke(editor, null);
-        }
+//        if (GUILayout.Button("Apply", GUILayout.MaxWidth(80)))
+//        {
+//            typeof(AssetImporterEditor).GetMethod("ApplyAndImport", Flags)?.Invoke(editor, null);
+//        }
 
         GUILayout.EndHorizontal();
 
@@ -72,8 +74,7 @@ public class ImporterExtension
             GUI.enabled = false;
     }
 
-
-    public static void Postfix()
+    public static void ApplyRevertPrefix()
     {
         GUI.enabled = true;
     }
