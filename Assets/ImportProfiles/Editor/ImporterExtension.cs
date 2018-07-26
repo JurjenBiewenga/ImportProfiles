@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Harmony;
+using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
@@ -14,14 +15,11 @@ public class ImporterExtension
     private const BindingFlags Flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public |
                                               System.Reflection.BindingFlags.FlattenHierarchy;
 
-    private Type[] types;
-
     private MemberInfo apply;
     
     public ImporterExtension(params Type[] types)
     {
-        this.types = types;
-        var harmony = HarmonyInstance.Create("com.lunosis.importprofiles");
+        var harmony = HarmonyInstance.Create("com.jurjenbiewenga.importprofiles");
         var inspectorPre = GetType().GetMethod(nameof(InspectorPrefix), Flags);
         var applyRevertPre = GetType().GetMethod(nameof(ApplyRevertPrefix), Flags);
         
@@ -52,7 +50,7 @@ public class ImporterExtension
             return;
 
         var assetImportersPaths =
-            ImportProfiles.GetProfiles(importer.GetType()).Select(x => x.assetPath).ToList();
+            ImportProfiles.GetProfiles(importer.GetType()).Select(x => x.Importer.assetPath).ToList();
 
         GUILayout.Label(importer.userData);
         

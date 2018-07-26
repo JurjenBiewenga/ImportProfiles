@@ -10,35 +10,34 @@ using Harmony;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Experimental.AssetImporters;
+using UnityEditorInternal;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 [InitializeOnLoad]
 public static class ImportProfiles
 {
-    public static IEnumerable<KeyValuePair<ProfileTypes, string>> ProfileExtensions
-    {
-        get { return profileExtensions; }
-    }
-
     private static Dictionary<ProfileTypes, string> profileExtensions = new Dictionary<ProfileTypes, string>()
     {
         {ProfileTypes.Model, ".obj"},
-        {ProfileTypes.Texture, ".png"}
+        {ProfileTypes.Texture, ".jpg"}
     };
 
     private static Dictionary<string, ProfileTypes> reverseProfileExtensions = new Dictionary<string, ProfileTypes>()
     {
         {".obj", ProfileTypes.Model},
-        {".png", ProfileTypes.Texture}
+        {".jpg", ProfileTypes.Texture}
     };
 
-    private static Dictionary<Type, List<AssetImporter>> profiles = new Dictionary<Type, List<AssetImporter>>();
+    private static Dictionary<ProfileTypes, Func<string, Object>> assetCreationfunctions =
+        new Dictionary<ProfileTypes, Func<string, Object>>()
+        {
+            {ProfileTypes.Model, AssetCreationFunctions.CreateModel},
+            {ProfileTypes.Texture, AssetCreationFunctions.CreateTexture}
+        };
 
-    private static Dictionary<ProfileTypes, List<AssetImporter>> typeProfiles =
-        new Dictionary<ProfileTypes, List<AssetImporter>>();
+    private static List<ProfileData> profiles = new List<ProfileData>();
 
-    private static List<ProfileData> profileData = new List<ProfileData>();
-    
     static ImportProfiles()
     {
         new ImporterExtension(Assembly.GetAssembly(typeof(Editor)).GetType("UnityEditor.ModelImporterEditor"));
@@ -49,52 +48,91 @@ public static class ImportProfiles
         {
             var path = AssetDatabase.GUIDToAssetPath(asset);
             var extension = Path.GetExtension(path);
-            if (reverseProfileExtensions.ContainsKey(extension))
+            if (!string.IsNullOrWhiteSpace(extension))
             {
-                var type = reverseProfileExtensions[extension];
-                AddProfile(type, AssetImporter.GetAtPath(path), false);
+                if (reverseProfileExtensions.ContainsKey(extension))
+                {
+                    AddProfile(AssetImporter.GetAtPath(path));
+                }
             }
         }
     }
 
-    public static void AddProfile(ProfileTypes type, AssetImporter profile, bool isDefault = false)
+    public static string GetExtension(ProfileTypes type)
     {
-        if (!typeProfiles.ContainsKey(type))
-            typeProfiles.Add(type, new List<AssetImporter>());
-
-        typeProfiles[type].Add(profile);
-
-        var importerType = profile.GetType();
-        if (!profiles.ContainsKey(importerType))
-            profiles.Add(importerType, new List<AssetImporter>());
-
-        profiles[importerType].Add(profile);
-        profileData.Add(JsonUtility.FromJson<ProfileData>(profile.userData));
+        string val;
+        profileExtensions.TryGetValue(type, out val);
+        return val;
+    }
+    
+    public static void AddProfile(AssetImporter profile)
+    {
+        var data = JsonUtility.FromJson<ProfileData>(profile.userData);
+        if (data != null)
+            profiles.Add(data);
     }
 
-    public static void CreateProfile(ProfileTypes type, string name)
+    public static ProfileData CreateProfile(ProfileTypes type, string name)
     {
-        var asset = new TextAsset();
         string path = string.Format("Assets/ImportProfiles/Editor/Profiles/{0}/{1}{2}", type.ToString() + 's',
             name, profileExtensions[type]);
-        
-        
-        AssetDatabase.CreateAsset(asset, path);
+        if (!AssetDatabase.IsValidFolder(Path.GetDirectoryName(path)?.Replace('\\', '/')))
+        {
+            AssetDatabase.CreateFolder("Assets/ImportProfiles/Editor/Profiles", type.ToString() + 's');
+        }
+
+        if (AssetDatabase.LoadAssetAtPath<Object>(path) != null)
+            path = AssetDatabase.GenerateUniqueAssetPath(path);
+
+        Func<string, Object> value;
+        if (!assetCreationfunctions.TryGetValue(type, out value))
+            return null;
+
+        value.Invoke(path);
         AssetDatabase.ImportAsset(path);
         AssetDatabase.SaveAssets();
 
         var importer = AssetImporter.GetAtPath(path);
-        new ProfileData(path, type, false).Apply();
-        AddProfile(type, importer, false);
+        if (importer != null)
+        {
+            var profile = new ProfileData(path, type, false);
+            AddProfile(importer);
+            return profile;
+        }
+
+        return null;
     }
 
-    public static IEnumerable<AssetImporter> GetProfiles(Type type)
+    public static void RemoveProfile(ProfileData profile)
     {
-        return profileData.Where(x=>x.Importer.GetType() == type).Select(x=>x.Importer);
+        profiles.Remove(profile);
+        AssetDatabase.DeleteAsset(profile.AssetPath);
     }
-    
-    public static IEnumerable<AssetImporter> GetProfiles(ProfileTypes type)
+
+    public static void RemoveNulls()
     {
-        return profileData.Where(x=>x.Type == type).Select(x=>x.Importer);
+        for (var i = profiles.Count - 1; i >= 0; i--)
+        {
+            if (profiles[i].Importer == null)
+                profiles.RemoveAt(i);
+        }
+    }
+
+    public static IEnumerable<ProfileData> GetProfiles()
+    {
+        RemoveNulls();
+        return profiles;
+    }
+
+    public static IEnumerable<ProfileData> GetProfiles(Type type)
+    {
+        RemoveNulls();
+        return profiles.Where(x => x.Importer.GetType() == type);
+    }
+
+    public static IEnumerable<ProfileData> GetProfiles(ProfileTypes type)
+    {
+        RemoveNulls();
+        return profiles.Where(x => x.Type == type);
     }
 }

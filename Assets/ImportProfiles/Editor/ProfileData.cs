@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,6 +13,8 @@ public class ProfileData
 
     private AssetImporter importer;
 
+    private string name;
+    
     public AssetImporter Importer
     {
         get
@@ -21,16 +25,43 @@ public class ProfileData
         }
     }
 
+    public string Name
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                name = Path.GetFileNameWithoutExtension(AssetPath);
+            }
+
+            return name;
+        }
+
+        set
+        {
+            if(Name == value)
+                return;
+            
+            AssetDatabase.RenameAsset(AssetPath, value);
+            string extension = Path.GetExtension(AssetPath);
+            AssetPath = AssetPath.Replace(name + extension, value + extension);
+            name = value;
+            Apply();
+        }
+    }
+
     public ProfileData(string assetPath, ProfileTypes type, bool isDefault = false)
     {
-        this.AssetPath = assetPath;
+        AssetPath = assetPath;
         IsDefault = isDefault;
         Type = type;
+        if (Importer != null)
+            Apply();
     }
 
     public void Apply()
     {
         Importer.userData = JsonUtility.ToJson(this);
-        Importer.SaveAndReimport();
+        AssetDatabase.ImportAsset(AssetPath);
     }
 }

@@ -151,7 +151,7 @@ public static class SerializedPropertyExtensionMethod
         if (property.isArray)
         {
             property.arraySize++;
-            var arrayElement = property.GetArrayElementAtIndex(property.arraySize -1);
+            var arrayElement = property.GetArrayElementAtIndex(property.arraySize - 1);
             arrayElement.SetValue(item);
             return true;
         }

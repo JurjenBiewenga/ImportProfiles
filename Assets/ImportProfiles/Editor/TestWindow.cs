@@ -1,19 +1,32 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.IMGUI.Controls;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 public class TestWindow : EditorWindow
 {
+    private const int SideBarWidth = 150;
+    private const int BorderWidth = 2;
+    private const int Margin = 4;
 
-    private AssetImporterEditor editor;
-    private AssetImporter importer;
-    
+    private ProfileTreeView treeView;
+
+    private GUIStyle areaStyle;
+    private GUIStyle dropDownButtonStyle;
+
+    [SerializeField]
+    private Editor currentEditor;
+
+    private TreeViewState treeViewState = new TreeViewState();
+    private GenericMenu createMenu = new GenericMenu();
+
     [MenuItem("Window/test")]
     public static void ShowWindow()
     {
@@ -22,31 +35,94 @@ public class TestWindow : EditorWindow
 
     void OnEnable()
     {
-        TestData data = new TestData();
+        treeView = new ProfileTreeView(treeViewState);
+        UpdateProfiles();
+        treeView.OnSelectionChanged += OnSelectionChanged;
+        treeView.OnRemoveProfile += OnRemoveProfile;
+        areaStyle = new GUIStyle();
+        areaStyle.margin = new RectOffset(Margin, Margin, Margin, Margin);
 
-//        AssetDatabase.CreateAsset(new TextAsset(),  );
-        
-        var type = Type.GetType("UnityEditor.ModelImporterEditor,UnityEditor");
-        importer = AssetImporter.GetAtPath("Assets/Editor/Resources/test2.obj");
-//        var method = type.GetMethod("InternalSetTargets",
-//            BindingFlags.Default | BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.NonPublic);
-//        editor = (AssetImporterEditor) Activator.CreateInstance(type);
-//        editor = (AssetImporterEditor) Editor.CreateEditor(importer);
-//        Debug.Log("Type" + type);
-//        Debug.Log("Importer" + importer);
-//       editor = (AssetImporterEditor)CreateInstance(type);
-//        method.Invoke(editor, BindingFlags.Default | BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.InvokeMethod, null, new [] {new Object[]{data}},  CultureInfo.CurrentCulture);
-//        Debug.Log("Editor" + editor);
-//        editor.OnEnable();
+        foreach (var profileType in Enum.GetValues(typeof(ProfileTypes)))
+        {
+            createMenu.AddItem(new GUIContent(profileType.ToString()), false, () =>
+            {
+                var profile = ImportProfiles.CreateProfile((ProfileTypes) profileType, profileType.ToString());
+                UpdateProfiles();
+                treeView.SelectItem(profile);
+                OnSelectionChanged(profile);
+            });
+        }
+
+        if (treeViewState.selectedIDs.Any())
+        {
+            OnSelectionChanged(treeView.GetItemById(treeViewState.selectedIDs.First()));
+        }
+    }
+
+    private void OnRemoveProfile(ProfileData profile)
+    {
+        if (!EditorUtility.DisplayDialog($"Delete profile {profile.Name}",
+            "Are you sure you wish to delete the profile?", "Yes", "No"))
+            return;
+        ImportProfiles.RemoveProfile(profile);
+        UpdateProfiles();
+    }
+
+    private void UpdateProfiles()
+    {
+        treeView.SetProfiles(ImportProfiles.GetProfiles());
+    }
+
+    private void OnSelectionChanged(ProfileData profile)
+    {
+        if (currentEditor != null)
+            DestroyImmediate(currentEditor);
+
+        if (profile != null)
+            currentEditor = Editor.CreateEditor(profile.Importer);
+    }
+
+    private void OnDisable()
+    {
+        DestroyImmediate(currentEditor);
     }
 
     private void OnGUI()
     {
-//        editor.OnInspectorGUI();
-        if (GUILayout.Button("test"))
-        {
-            ImportProfiles.CreateProfile(ProfileTypes.Model, "Test");
-        }
+        DrawSizebar();
+        DrawCurrentEditor();
     }
-    
+
+    private void DrawCurrentEditor()
+    {
+        GUILayout.BeginArea(new Rect(SideBarWidth, 0, Screen.width - SideBarWidth, Screen.height), areaStyle);
+
+        if (currentEditor != null && currentEditor.target != null)
+            currentEditor.OnInspectorGUI();
+        else
+            UpdateProfiles();
+        GUILayout.EndArea();
+    }
+
+    private void DrawSizebar()
+    {
+        GUILayout.BeginArea(new Rect(0, 0, SideBarWidth, Screen.height), areaStyle);
+
+        var treeViewRect = new Rect(0, Margin, SideBarWidth - BorderWidth,
+            Screen.height - EditorGUIUtility.singleLineHeight - Margin);
+        treeView.OnGUI(treeViewRect);
+
+        // Magic number because unity is weird
+        var dropDownButtonRect = new Rect(Margin, Screen.height - 46,
+            SideBarWidth - Margin * 2 - BorderWidth, EditorGUIUtility.singleLineHeight);
+
+        if (GUI.Button(dropDownButtonRect, new GUIContent("Create"), "DropDown"))
+        {
+            createMenu.DropDown(dropDownButtonRect);
+        }
+
+
+        GUI.Box(new Rect(SideBarWidth - BorderWidth, 0, BorderWidth, Screen.height), "");
+        GUILayout.EndArea();
+    }
 }
