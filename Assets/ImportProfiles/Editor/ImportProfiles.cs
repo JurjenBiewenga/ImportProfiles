@@ -109,6 +109,24 @@ public static class ImportProfiles
         AssetDatabase.DeleteAsset(profile.AssetPath);
     }
 
+    public static void UpdateDefault(ProfileData data)
+    {
+        var profiles = GetProfiles(data.Type);
+        foreach (ProfileData profileData in profiles)
+        {
+            if (profileData == data)
+                data.Apply();
+            else
+            {
+                if (profileData.IsDefault)
+                {
+                    profileData.IsDefault = false;
+                    profileData.Apply();
+                }
+            }
+        }
+    }
+
     public static void RemoveNulls()
     {
         for (var i = profiles.Count - 1; i >= 0; i--)

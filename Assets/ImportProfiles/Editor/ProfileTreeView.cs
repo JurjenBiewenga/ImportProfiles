@@ -100,9 +100,18 @@ public class ProfileTreeView : TreeView
             return;
         
         Rect buttonRect = new Rect(args.rowRect.x + args.rowRect.width - EditorGUIUtility.singleLineHeight, args.rowRect.y, EditorGUIUtility.singleLineHeight, EditorGUIUtility.singleLineHeight);
+        Rect isDefaultRect = new Rect(args.rowRect.x + args.rowRect.width - EditorGUIUtility.singleLineHeight * 2, args.rowRect.y, EditorGUIUtility.singleLineHeight, EditorGUIUtility.singleLineHeight);
         if (GUI.Button(buttonRect, "x"))
         {
             OnRemoveProfile?.Invoke(GetItemById(args.item.id));
+        }
+        EditorGUI.BeginChangeCheck();
+
+        profile.IsDefault = GUI.Toggle(isDefaultRect, profile.IsDefault, "");
+        
+        if (EditorGUI.EndChangeCheck())
+        {
+            ImportProfiles.UpdateDefault(profile);
         }
     }
 
