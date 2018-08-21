@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
@@ -21,7 +22,7 @@ public class ImportProfileImporter : AssetPostprocessor
 
         if (string.IsNullOrWhiteSpace(assetImporter.userData))
         {
-            var defaultProfile = ImportProfiles.GetProfiles(assetImporter.GetType()).FirstOrDefault(x => x.IsDefault);
+            ProfileData defaultProfile = ImportProfiles.GetProfiles(assetImporter.GetType()).FirstOrDefault(x => Regex.IsMatch(assetImporter.assetPath,WildCardToRegular( x.WildcardQuery)));
             if (defaultProfile != null)
                 assetImporter.userData = defaultProfile.AssetPath;
             else
@@ -31,24 +32,23 @@ public class ImportProfileImporter : AssetPostprocessor
         if (assetImporter.userData == "Custom")
             return;
 
-        var importer = AssetImporter.GetAtPath(assetImporter.userData);
+        AssetImporter importer = AssetImporter.GetAtPath(assetImporter.userData);
         
         if(importer == null)
             return;
                  
-        SerializedObject so = new SerializedObject(importer);
+        var so = new SerializedObject(importer);
 
-        SerializedObject targetSO = new SerializedObject(assetImporter);
+        var targetSO = new SerializedObject(assetImporter);
 
-        var property = so.GetIterator();
+        SerializedProperty property = so.GetIterator();
         property.Next(true);
         do
         {
             if (ignoredProperties.Contains(property.name))
                 continue;
 
-            SerializedProperty targetProperty = targetSO.FindProperty(property.propertyPath);
-            targetProperty?.SetValue(property.GetValue());
+            targetSO.CopyFromSerializedProperty(property);
         } while (property.Next(false));
 
         targetSO.ApplyModifiedPropertiesWithoutUndo();
@@ -62,5 +62,9 @@ public class ImportProfileImporter : AssetPostprocessor
     private void OnPreprocessTexture()
     {
         ApplyProfile();
+    }
+    
+    private static string WildCardToRegular(string value) {
+        return "^" + Regex.Escape(value).Replace("\\*", ".*") + "$"; 
     }
 }

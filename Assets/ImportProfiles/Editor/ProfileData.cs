@@ -8,8 +8,8 @@ using UnityEngine;
 public class ProfileData
 {
     public string AssetPath;
-    public bool IsDefault;
     public ProfileTypes Type;
+    public string WildcardQuery;
 
     private AssetImporter importer;
 
@@ -50,10 +50,9 @@ public class ProfileData
         }
     }
 
-    public ProfileData(string assetPath, ProfileTypes type, bool isDefault = false)
+    public ProfileData(string assetPath, ProfileTypes type)
     {
         AssetPath = assetPath;
-        IsDefault = isDefault;
         Type = type;
         if (Importer != null)
             Apply();

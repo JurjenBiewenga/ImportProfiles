@@ -10,7 +10,7 @@ using UnityEditor.VersionControl;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-public class TestWindow : EditorWindow
+public class ImportProfilesWindow : EditorWindow
 {
     private const int SideBarWidth = 150;
     private const int BorderWidth = 2;
@@ -26,11 +26,12 @@ public class TestWindow : EditorWindow
 
     private TreeViewState treeViewState = new TreeViewState();
     private GenericMenu createMenu = new GenericMenu();
+    private ProfileData currentProfile;
 
-    [MenuItem("Window/test")]
+    [MenuItem("Window/Import Profiles Editor")]
     public static void ShowWindow()
     {
-        GetWindow<TestWindow>().Show();
+        GetWindow<ImportProfilesWindow>().Show();
     }
 
     void OnEnable()
@@ -79,7 +80,10 @@ public class TestWindow : EditorWindow
             DestroyImmediate(currentEditor);
 
         if (profile != null)
+        {
+            currentProfile = profile;
             currentEditor = Editor.CreateEditor(profile.Importer);
+        }
     }
 
     private void OnDisable()
@@ -98,7 +102,20 @@ public class TestWindow : EditorWindow
         GUILayout.BeginArea(new Rect(SideBarWidth, 0, Screen.width - SideBarWidth, Screen.height), areaStyle);
 
         if (currentEditor != null && currentEditor.target != null)
+        {
             currentEditor.OnInspectorGUI();
+            GUILayout.Space(EditorGUIUtility.singleLineHeight);
+
+            EditorGUI.BeginChangeCheck();
+            
+            currentProfile.WildcardQuery = EditorGUILayout.TextField("Regex",currentProfile.WildcardQuery);
+            
+            if(EditorGUI.EndChangeCheck())
+            {
+                currentProfile.Apply();
+            }
+            
+        }
         else
             UpdateProfiles();
         GUILayout.EndArea();

@@ -95,7 +95,7 @@ public static class ImportProfiles
         var importer = AssetImporter.GetAtPath(path);
         if (importer != null)
         {
-            var profile = new ProfileData(path, type, false);
+            var profile = new ProfileData(path, type);
             AddProfile(importer);
             return profile;
         }
@@ -107,24 +107,6 @@ public static class ImportProfiles
     {
         profiles.Remove(profile);
         AssetDatabase.DeleteAsset(profile.AssetPath);
-    }
-
-    public static void UpdateDefault(ProfileData data)
-    {
-        var profiles = GetProfiles(data.Type);
-        foreach (ProfileData profileData in profiles)
-        {
-            if (profileData == data)
-                data.Apply();
-            else
-            {
-                if (profileData.IsDefault)
-                {
-                    profileData.IsDefault = false;
-                    profileData.Apply();
-                }
-            }
-        }
     }
 
     public static void RemoveNulls()

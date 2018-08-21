@@ -37,38 +37,44 @@ public class ImporterExtension
     // ReSharper disable once InconsistentNaming
     public static void InspectorPrefix(object __instance)
     {
-        AssetImporterEditor editor = __instance as AssetImporterEditor;
+        var editor = __instance as AssetImporterEditor;
 
         if (editor == null)
             return;
 
-        AssetImporter importer = editor.target as AssetImporter;
+        var importer = editor.target as AssetImporter;
         if (importer == null)
             return;
         
         if(importer.assetPath.Contains("ImportProfiles"))
             return;
 
-        var assetImportersPaths =
+        List<string> assetImportersPaths =
             ImportProfiles.GetProfiles(importer.GetType()).Select(x => x.Importer.assetPath).ToList();
 
         GUILayout.Label(importer.userData);
-        
-        string[] names = null;
-        assetImportersPaths.Add("Custom");
-        var list = assetImportersPaths.Select(Path.GetFileNameWithoutExtension).ToList();
-        names = list.ToArray();
 
-        var userDataProperty = editor.serializedObject.FindProperty("m_UserData");
+        assetImportersPaths.Add("Custom");
+        List<string> list = assetImportersPaths.Select(Path.GetFileNameWithoutExtension).ToList();
+        string[] names = list.ToArray();
+
+        SerializedProperty userDataProperty = editor.serializedObject.FindProperty("m_UserData");
         GUILayout.BeginHorizontal();
-        var index = assetImportersPaths.IndexOf(userDataProperty.stringValue);
+        int index = assetImportersPaths.IndexOf(userDataProperty.stringValue);
         if (index == -1)
             index = 0;
-        
-        userDataProperty.stringValue =
+
+        string userDataValue;
+
+        EditorGUI.BeginChangeCheck();
+        userDataValue =
             assetImportersPaths[
                 EditorGUILayout.Popup("Selected Profile", index,
                     names)];
+        if (EditorGUI.EndChangeCheck())
+        {
+            userDataProperty.stringValue = userDataValue;
+        }
 
         GUILayout.EndHorizontal();
 

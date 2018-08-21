@@ -105,14 +105,6 @@ public class ProfileTreeView : TreeView
         {
             OnRemoveProfile?.Invoke(GetItemById(args.item.id));
         }
-        EditorGUI.BeginChangeCheck();
-
-        profile.IsDefault = GUI.Toggle(isDefaultRect, profile.IsDefault, "");
-        
-        if (EditorGUI.EndChangeCheck())
-        {
-            ImportProfiles.UpdateDefault(profile);
-        }
     }
 
     public ProfileData GetItemById(int id)
