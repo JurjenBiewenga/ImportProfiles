@@ -108,7 +108,7 @@ public class ImportProfilesWindow : EditorWindow
 
             EditorGUI.BeginChangeCheck();
             
-            currentProfile.WildcardQuery = EditorGUILayout.TextField("Regex",currentProfile.WildcardQuery);
+            currentProfile.WildcardQuery = EditorGUILayout.TextField("Wildcard Query",currentProfile.WildcardQuery);
             
             if(EditorGUI.EndChangeCheck())
             {
